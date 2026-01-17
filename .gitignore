@@ -76,6 +76,9 @@ coverage/
 .next/
 out/
 
+# Legacy folder (previous submodule)
+frontend/
+
 # Production build
 /build
 
