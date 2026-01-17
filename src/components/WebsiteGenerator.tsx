@@ -74,10 +74,6 @@ export function WebsiteGenerator() {
   const [generatedWebsite, setGeneratedWebsite] = useState<GeneratedWebsite | null>(null);
   const [error, setError] = useState('');
 
-  const API_URL = process.env.NODE_ENV === 'production' 
-    ? ''  // Use same domain for serverless functions
-    : 'http://localhost:8000';
-
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       setError('Please enter a description for your website');
@@ -88,7 +84,7 @@ export function WebsiteGenerator() {
     setError('');
 
     try {
-      const response = await fetch(`${API_URL}/api/generate`, {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +113,12 @@ export function WebsiteGenerator() {
     if (!generatedWebsite) return;
 
     try {
-      const response = await fetch(`${API_URL}/export/${generatedWebsite.id}`);
+      const response = await fetch(`/api/export/${generatedWebsite.id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to export website');
+      }
+      
       const data = await response.json();
 
       // Create and download files
