@@ -31,6 +31,7 @@ function TemplateSelector({ selectedTemplate, onTemplateChange }: { selectedTemp
         {templates.map((template) => (
           <button
             key={template.id}
+            type="button"
             onClick={() => onTemplateChange(template.id)}
             className={`p-3 rounded-lg border-2 transition-all text-left ${
               selectedTemplate === template.id
@@ -77,13 +78,14 @@ export function WebsiteGenerator() {
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    setError('');
+    
+    if (!prompt || prompt.trim() === '') {
       setError('Please enter a description for your website');
       return;
     }
 
     setIsGenerating(true);
-    setError('');
 
     try {
       const response = await fetch('/api/generate-website', {
@@ -92,21 +94,23 @@ export function WebsiteGenerator() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt,
+          prompt: prompt.trim(),
           template: selectedTemplate === 'custom' ? null : selectedTemplate,
           style: 'modern'
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to generate website');
+        throw new Error(data.error || 'Failed to generate website');
       }
 
-      const website = await response.json();
-      setGeneratedWebsite(website);
+      setGeneratedWebsite(data);
+      setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred while generating the website';
+      setError(errorMessage);
       console.error('Generation error:', err);
     } finally {
       setIsGenerating(false);
@@ -117,21 +121,21 @@ export function WebsiteGenerator() {
     if (!generatedWebsite) return;
 
     try {
-      const cssRegex = /<style[^>]*>([\s\S]*?)<\/style>/i;
-      const jsRegex = /<script[^>]*>([\s\S]*?)<\/script>/i;
+      const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/i;
+      const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/i;
       
-      const cssMatch = generatedWebsite.html.match(cssRegex);
-      const css = cssMatch ? cssMatch[1].trim() : '';
+      const styleMatch = generatedWebsite.html.match(styleRegex);
+      const css = styleMatch ? styleMatch[1].trim() : '';
 
-      const jsMatch = generatedWebsite.html.match(jsRegex);
-      const js = jsMatch ? jsMatch[1].trim() : '';
+      const scriptMatch = generatedWebsite.html.match(scriptRegex);
+      const js = scriptMatch ? scriptMatch[1].trim() : '';
 
       let cleanHtml = generatedWebsite.html;
       if (css) {
-        cleanHtml = cleanHtml.replace(cssRegex, '<link rel="stylesheet" href="styles.css">');
+        cleanHtml = cleanHtml.replace(styleRegex, '<link rel="stylesheet" href="styles.css">');
       }
       if (js) {
-        cleanHtml = cleanHtml.replace(jsRegex, '<script src="script.js"></script>');
+        cleanHtml = cleanHtml.replace(scriptRegex, '<script src="script.js"></script>');
       }
 
       downloadFile('index.html', cleanHtml);
@@ -146,46 +150,31 @@ export function WebsiteGenerator() {
 
       downloadFile('website-complete.html', generatedWebsite.html);
 
-      const readme = `# Generated Website
+      const readmeContent = `Generated Website
 
 Generated on: ${new Date(generatedWebsite.metadata.created_at).toLocaleString()}
 Template: ${generatedWebsite.metadata.template || 'Custom'}
 Style: ${generatedWebsite.metadata.style}
 Prompt: ${generatedWebsite.metadata.prompt}
 
-## Files Included:
+Files Included:
+- website-complete.html (Complete website in a single file)
+- index.html (Main HTML file)
+- styles.css (Stylesheet if CSS was extracted)
+- script.js (JavaScript file if JS was extracted)
 
-1. website-complete.html - Complete website in a single file
-2. index.html - Main HTML file
-3. styles.css - Stylesheet (if CSS was extracted)
-4. script.js - JavaScript file (if JS was extracted)
+How to Use:
+1. Open website-complete.html in your browser for quick preview
+2. Or open index.html if you have all files in the same folder
 
-## How to Use:
-
-### Option 1: Single File
-- Open website-complete.html in your browser
-
-### Option 2: Multiple Files
-- Make sure all files are in the same folder
-- Open index.html in your browser
-
-## Deployment:
-
-### Vercel:
-1. Install Vercel CLI: npm i -g vercel
-2. Run: vercel
-
-### Netlify:
-1. Drag and drop your folder to netlify.com/drop
-
-### GitHub Pages:
-1. Create a new repository
-2. Upload all files
-3. Enable GitHub Pages in Settings
+Deployment Options:
+- Vercel: Install CLI with npm i -g vercel, then run vercel
+- Netlify: Drag and drop your folder to netlify.com/drop
+- GitHub Pages: Upload files to a GitHub repository and enable Pages
 
 Enjoy your new website!
 `;
-      downloadFile('README.md', readme);
+      downloadFile('README.md', readmeContent);
 
     } catch (err) {
       setError('Failed to export website files');
@@ -196,12 +185,12 @@ Enjoy your new website!
   const downloadFile = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
@@ -237,6 +226,7 @@ Enjoy your new website!
               )}
 
               <button
+                type="button"
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
@@ -257,6 +247,7 @@ Enjoy your new website!
               ].map((example, index) => (
                 <button
                   key={index}
+                  type="button"
                   onClick={() => setPrompt(example)}
                   className="block w-full text-left p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-sm text-gray-700"
                 >
@@ -273,6 +264,7 @@ Enjoy your new website!
               <h2 className="text-2xl font-semibold text-gray-900">Preview</h2>
               {generatedWebsite && (
                 <button
+                  type="button"
                   onClick={handleExport}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
                 >
@@ -284,7 +276,7 @@ Enjoy your new website!
             {generatedWebsite ? (
               <WebsitePreview website={generatedWebsite} />
             ) : (
-              <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+              <div className="bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300" style={{ height: '400px' }}>
                 <p className="text-gray-500 text-center px-4">
                   {isGenerating ? (
                     <span className="flex flex-col items-center gap-2">
