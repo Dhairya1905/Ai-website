@@ -5,8 +5,6 @@ import { useState } from 'react';
 interface GeneratedWebsite {
   id: string;
   html: string;
-  css: string;
-  js: string;
   metadata: {
     prompt: string;
     template?: string;
@@ -52,23 +50,13 @@ function TemplateSelector({ selectedTemplate, onTemplateChange }: { selectedTemp
 function WebsitePreview({ website }: { website: GeneratedWebsite }) {
   return (
     <div className="space-y-4">
-      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+      {/* FIXED: Actual iframe preview showing the generated HTML */}
+      <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
         <iframe
-          srcDoc={`
-            <!DOCTYPE html>
-            <html>
-              <head>
-                <style>${website.css}</style>
-              </head>
-              <body>
-                ${website.html}
-                <script>${website.js}</script>
-              </body>
-            </html>
-          `}
-          className="w-full h-96 border-0"
-          sandbox="allow-scripts"
+          srcDoc={website.html}
+          className="w-full h-[500px] bg-white"
           title="Website Preview"
+          sandbox="allow-scripts allow-same-origin"
         />
       </div>
       
@@ -98,7 +86,8 @@ export function WebsiteGenerator() {
     setError('');
 
     try {
-      const response = await fetch('/api/generate', {
+      // FIXED: Correct API endpoint for Vercel serverless function
+      const response = await fetch('/api/generate-website', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,45 +100,120 @@ export function WebsiteGenerator() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate website');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate website');
       }
 
       const website = await response.json();
       setGeneratedWebsite(website);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Generation error:', err);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleExport = async () => {
+  // FIXED: Export function that creates proper HTML, CSS, JS files
+  const handleExport = () => {
     if (!generatedWebsite) return;
 
     try {
-      const response = await fetch(`/api/export/${generatedWebsite.id}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to export website');
-      }
-      
-      const data = await response.json();
+      // Extract CSS from the HTML
+      const cssMatch = generatedWebsite.html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      const css = cssMatch ? cssMatch[1].trim() : '';
 
-      // Create and download files
-      Object.entries(data.files).forEach(([filename, content]) => {
-        const blob = new Blob([content as string], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      });
+      // Extract JS from the HTML
+      const jsMatch = generatedWebsite.html.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+      const js = jsMatch ? jsMatch[1].trim() : '';
+
+      // Create HTML without inline style/script (linking to external files)
+      let cleanHtml = generatedWebsite.html;
+      if (css) {
+        cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/i, '<link rel="stylesheet" href="styles.css">');
+      }
+      if (js) {
+        cleanHtml = cleanHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/i, '<script src="script.js"></script>');
+      }
+
+      // Download HTML file
+      downloadFile('index.html', cleanHtml);
+
+      // Download CSS file if exists
+      if (css) {
+        downloadFile('styles.css', css);
+      }
+
+      // Download JS file if exists
+      if (js) {
+        downloadFile('script.js', js);
+      }
+
+      // Also download the complete single-file version
+      downloadFile('website-complete.html', generatedWebsite.html);
+
+      // Download README with instructions
+      const readme = `# Generated Website
+
+Generated on: ${new Date(generatedWebsite.metadata.created_at).toLocaleString()}
+Template: ${generatedWebsite.metadata.template || 'Custom'}
+Style: ${generatedWebsite.metadata.style}
+Prompt: ${generatedWebsite.metadata.prompt}
+
+## Files Included:
+
+1. **website-complete.html** - Complete website in a single file (use this for quick preview)
+2. **index.html** - Main HTML file
+3. **styles.css** - Stylesheet (if CSS was extracted)
+4. **script.js** - JavaScript file (if JS was extracted)
+
+## How to Use:
+
+### Option 1: Single File (Easiest)
+- Open "website-complete.html" in your browser
+- Everything works immediately!
+
+### Option 2: Multiple Files (For editing)
+- Make sure all files are in the same folder
+- Open "index.html" in your browser
+- Edit CSS in styles.css and JS in script.js
+
+## Deployment:
+
+### Deploy to Vercel (Free):
+1. Install Vercel CLI: npm i -g vercel
+2. Run: vercel
+3. Follow prompts
+
+### Deploy to Netlify (Free):
+1. Drag and drop your folder to netlify.com/drop
+
+### Deploy to GitHub Pages (Free):
+1. Create a new repository
+2. Upload all files
+3. Enable GitHub Pages in Settings
+
+Enjoy your new website! 🎉
+`;
+      downloadFile('README.md', readme);
+
     } catch (err) {
-      setError('Failed to export website');
+      setError('Failed to export website files');
+      console.error('Export error:', err);
     }
+  };
+
+  // Helper function to download files
+  const downloadFile = (filename: string, content: string) => {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -234,9 +298,19 @@ export function WebsiteGenerator() {
             {generatedWebsite ? (
               <WebsitePreview website={generatedWebsite} />
             ) : (
-              <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
-                <p className="text-gray-500 text-center">
-                  Your generated website will appear here
+              <div className="h-96 bg-gray-50 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                <p className="text-gray-500 text-center px-4">
+                  {isGenerating ? (
+                    <span className="flex flex-col items-center gap-2">
+                      <svg className="animate-spin h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating your website...
+                    </span>
+                  ) : (
+                    'Your generated website will appear here'
+                  )}
                 </p>
               </div>
             )}
