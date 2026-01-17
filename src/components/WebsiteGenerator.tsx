@@ -52,10 +52,24 @@ function TemplateSelector({ selectedTemplate, onTemplateChange }: { selectedTemp
 function WebsitePreview({ website }: { website: GeneratedWebsite }) {
   return (
     <div className="space-y-4">
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="h-96 bg-gray-100 flex items-center justify-center">
-          <p className="text-gray-600">Website preview loaded successfully!</p>
-        </div>
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+        <iframe
+          srcDoc={`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <style>${website.css}</style>
+              </head>
+              <body>
+                ${website.html}
+                <script>${website.js}</script>
+              </body>
+            </html>
+          `}
+          className="w-full h-96 border-0"
+          sandbox="allow-scripts"
+          title="Website Preview"
+        />
       </div>
       
       <div className="text-sm text-gray-600 space-y-1">
