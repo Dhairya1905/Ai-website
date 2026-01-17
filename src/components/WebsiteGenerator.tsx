@@ -50,11 +50,11 @@ function TemplateSelector({ selectedTemplate, onTemplateChange }: { selectedTemp
 function WebsitePreview({ website }: { website: GeneratedWebsite }) {
   return (
     <div className="space-y-4">
-      {/* FIXED: Actual iframe preview showing the generated HTML */}
       <div className="border-2 border-gray-300 rounded-lg overflow-hidden shadow-lg">
         <iframe
           srcDoc={website.html}
-          className="w-full h-[500px] bg-white"
+          className="w-full bg-white"
+          style={{ height: '500px' }}
           title="Website Preview"
           sandbox="allow-scripts allow-same-origin"
         />
@@ -86,7 +86,6 @@ export function WebsiteGenerator() {
     setError('');
 
     try {
-      // FIXED: Correct API endpoint for Vercel serverless function
       const response = await fetch('/api/generate-website', {
         method: 'POST',
         headers: {
@@ -114,45 +113,39 @@ export function WebsiteGenerator() {
     }
   };
 
-  // FIXED: Export function that creates proper HTML, CSS, JS files
   const handleExport = () => {
     if (!generatedWebsite) return;
 
     try {
-      // Extract CSS from the HTML
-      const cssMatch = generatedWebsite.html.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+      const cssRegex = /<style[^>]*>([\s\S]*?)<\/style>/i;
+      const jsRegex = /<script[^>]*>([\s\S]*?)<\/script>/i;
+      
+      const cssMatch = generatedWebsite.html.match(cssRegex);
       const css = cssMatch ? cssMatch[1].trim() : '';
 
-      // Extract JS from the HTML
-      const jsMatch = generatedWebsite.html.match(/<script[^>]*>([\s\S]*?)<\/script>/i);
+      const jsMatch = generatedWebsite.html.match(jsRegex);
       const js = jsMatch ? jsMatch[1].trim() : '';
 
-      // Create HTML without inline style/script (linking to external files)
       let cleanHtml = generatedWebsite.html;
       if (css) {
-        cleanHtml = cleanHtml.replace(/<style[^>]*>[\s\S]*?<\/style>/i, '<link rel="stylesheet" href="styles.css">');
+        cleanHtml = cleanHtml.replace(cssRegex, '<link rel="stylesheet" href="styles.css">');
       }
       if (js) {
-        cleanHtml = cleanHtml.replace(/<script[^>]*>[\s\S]*?<\/script>/i, '<script src="script.js"></script>');
+        cleanHtml = cleanHtml.replace(jsRegex, '<script src="script.js"></script>');
       }
 
-      // Download HTML file
       downloadFile('index.html', cleanHtml);
 
-      // Download CSS file if exists
       if (css) {
         downloadFile('styles.css', css);
       }
 
-      // Download JS file if exists
       if (js) {
         downloadFile('script.js', js);
       }
 
-      // Also download the complete single-file version
       downloadFile('website-complete.html', generatedWebsite.html);
 
-      // Download README with instructions
       const readme = `# Generated Website
 
 Generated on: ${new Date(generatedWebsite.metadata.created_at).toLocaleString()}
@@ -162,38 +155,35 @@ Prompt: ${generatedWebsite.metadata.prompt}
 
 ## Files Included:
 
-1. **website-complete.html** - Complete website in a single file (use this for quick preview)
-2. **index.html** - Main HTML file
-3. **styles.css** - Stylesheet (if CSS was extracted)
-4. **script.js** - JavaScript file (if JS was extracted)
+1. website-complete.html - Complete website in a single file
+2. index.html - Main HTML file
+3. styles.css - Stylesheet (if CSS was extracted)
+4. script.js - JavaScript file (if JS was extracted)
 
 ## How to Use:
 
-### Option 1: Single File (Easiest)
-- Open "website-complete.html" in your browser
-- Everything works immediately!
+### Option 1: Single File
+- Open website-complete.html in your browser
 
-### Option 2: Multiple Files (For editing)
+### Option 2: Multiple Files
 - Make sure all files are in the same folder
-- Open "index.html" in your browser
-- Edit CSS in styles.css and JS in script.js
+- Open index.html in your browser
 
 ## Deployment:
 
-### Deploy to Vercel (Free):
+### Vercel:
 1. Install Vercel CLI: npm i -g vercel
 2. Run: vercel
-3. Follow prompts
 
-### Deploy to Netlify (Free):
+### Netlify:
 1. Drag and drop your folder to netlify.com/drop
 
-### Deploy to GitHub Pages (Free):
+### GitHub Pages:
 1. Create a new repository
 2. Upload all files
 3. Enable GitHub Pages in Settings
 
-Enjoy your new website! 🎉
+Enjoy your new website!
 `;
       downloadFile('README.md', readme);
 
@@ -203,7 +193,6 @@ Enjoy your new website! 🎉
     }
   };
 
-  // Helper function to download files
   const downloadFile = (filename: string, content: string) => {
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -219,7 +208,6 @@ Enjoy your new website! 🎉
   return (
     <div className="max-w-6xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Input Section */}
         <div className="space-y-6">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-2xl font-semibold mb-4 text-gray-900">Describe Your Website</h2>
@@ -258,7 +246,6 @@ Enjoy your new website! 🎉
             </div>
           </div>
 
-          {/* Examples */}
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-lg font-semibold mb-3 text-gray-900">Example Prompts</h3>
             <div className="space-y-2">
@@ -280,7 +267,6 @@ Enjoy your new website! 🎉
           </div>
         </div>
 
-        {/* Preview Section */}
         <div className="lg:sticky lg:top-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
             <div className="flex justify-between items-center mb-4">
