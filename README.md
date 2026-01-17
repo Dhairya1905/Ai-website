@@ -1,87 +1,36 @@
-# AI-Powered Website Generator
-
-An intelligent web application that generates functional websites from natural language descriptions using AI models.
-
-## Features
-
-- **Natural Language Input**: Describe your website in plain text
-- **AI-Powered Generation**: Uses LLMs to generate HTML/CSS/JavaScript
-- **Component Library**: Reusable UI components for consistent design
-- **Live Preview**: Preview generated websites before downloading
-- **Export Functionality**: Download generated code or deploy to subdomains
-- **Responsive Design**: Mobile-first approach for all devices
-
-## Technology Stack
-
-- **Frontend**: Next.js 14 with TypeScript
-- **Backend**: FastAPI with Python
-- **AI Integration**: OpenAI API / Anthropic Claude
-- **Database**: PostgreSQL with Prisma ORM
-- **Styling**: Tailwind CSS
-- **Deployment**: Render/Vercel
-
-## Project Structure
-
-```
-ai-website-generator/
-├── frontend/          # Next.js frontend application
-├── backend/           # FastAPI backend API
-├── components/        # Reusable UI components library
-├── docs/             # Documentation
-└── README.md         # This file
-```
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
 
-### Prerequisites
+First, run the development server:
 
-- Node.js 18+
-- Python 3.9+
-- PostgreSQL (optional for local development)
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-### Installation
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-1. Clone the repository
-2. Install frontend dependencies:
-   ```bash
-   cd frontend && npm install
-   ```
-3. Install backend dependencies:
-   ```bash
-   cd backend && pip install -r requirements.txt
-   ```
-4. Set up environment variables (see `.env.example`)
-5. Run the development servers:
-   ```bash
-   # Frontend
-   cd frontend && npm run dev
-   
-   # Backend
-   cd backend && uvicorn main:app --reload
-   ```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## API Endpoints
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-- `POST /api/generate` - Generate website from prompt
-- `GET /api/templates` - Get available templates
-- `POST /api/export` - Export generated website
-- `GET /api/preview/{id}` - Preview generated website
+## Learn More
 
-## Usage
+To learn more about Next.js, take a look at the following resources:
 
-1. Open the frontend application in your browser
-2. Enter a description of the website you want to create
-3. Choose a template or let AI generate from scratch
-4. Preview the generated website
-5. Export the code or deploy to a subdomain
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## Contributing
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+## Deploy on Vercel
 
-## License
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-MIT License
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
